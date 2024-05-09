@@ -6,7 +6,7 @@ from models.utils import align_cnn_vit_features
 
 class DeltaDINO(nn.Module):
     def __init__(self,
-                 channels=[3, 64, 128, 256, 1024],
+                 channels=[3, 64, 128, 256, 768],
                  dilations=[1, 1, 1, 2],
                  kernel_size=5,
                  down_stride=2,

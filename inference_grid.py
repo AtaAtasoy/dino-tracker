@@ -14,6 +14,8 @@ def run(args):
     dino_tracker = DINOTracker(args)
     dino_tracker.load_fg_masks()
     model = dino_tracker.get_model()
+    # interval = args.interval
+    # start_frame = args.start_frame
     if args.iter is not None:
         model.load_weights(args.iter)
 
@@ -40,6 +42,8 @@ def run(args):
     np.save(os.path.join(grid_trajectories_dir, "grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
     np.save(os.path.join(grid_occlusions_dir, "grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
 
+    # np.save(os.path.join(grid_trajectories_dir, f"start_frame_{start_frame}_interval_{interval}_grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
+    # np.save(os.path.join(grid_occlusions_dir, f"start_frame_{start_frame}_interval_{interval}_grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

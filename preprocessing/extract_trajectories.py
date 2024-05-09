@@ -3,7 +3,8 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.nn import functional as F
-from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
+# from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
+from torchvision.models.optical_flow import Raft_Small_Weights, raft_small
 from einops import rearrange, repeat
 from tqdm import tqdm
 from tqdm.contrib import tzip
@@ -179,8 +180,10 @@ def save_trajectories(args):
     h, w = load_image(images[0], device).shape[2:4] if infer_res_size is None else infer_res_size
     t = len(images)
 
-    model = raft_large(weights=Raft_Large_Weights.DEFAULT, progress=False).to(device).eval()
-    transforms = Raft_Large_Weights.DEFAULT.transforms()
+    # model = raft_large(weights=Raft_Large_Weights.DEFAULT, progress=False).to(device).eval()
+    # transforms = Raft_Large_Weights.DEFAULT.transforms()
+    model = raft_small(weights=Raft_Small_Weights.DEFAULT, progress=False).to(device).eval()
+    transforms = Raft_Small_Weights.DEFAULT.transforms()
 
     masks, flows = get_flows_with_masks(
         model,

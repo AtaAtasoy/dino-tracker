@@ -145,10 +145,11 @@ def run(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", default="./dataset/libby", type=str)
-    parser.add_argument("--infer-res-size", type=int, nargs=2, default=(476, 854), help="Inference resolution size, (h, w). --NOTE-- change according to values in train.yaml.")
-    parser.add_argument("--of-res-size", type=int, nargs=2, default=(476, 854), help="Optical flow resolution size, (h, w). --NOTE-- change according to values in preprocess.yaml.")
+    parser.add_argument("--infer-res-size", type=int, nargs=2, default=(392, 266), help="Inference resolution size, (h, w). --NOTE-- change according to values in train.yaml.")
+    parser.add_argument("--of-res-size", type=int, nargs=2, default=(392, 266), help="Optical flow resolution size, (h, w). --NOTE-- change according to values in preprocess.yaml.")
     parser.add_argument("--erosion-kernel-size", type=int, default=None, help="size of the erosion kernel for the segmentation mask. If None, no erosion is applied.")
     parser.add_argument("--vis-start-frame", type=int, default=0, help="should be same as start_frame in inference_grid.py")
+    parser.add_argument("--interval", type=int, default=10, help="should be same as interval in inference_grid.py")
     parser.add_argument("--vis-end-frame", type=int, default=None)
     parser.add_argument("--canonical-frame", type=int, default=None)
     parser.add_argument("--fps", type=int, default=10)
