@@ -210,7 +210,7 @@ def load_pre_computed_query_points(query_points_path, query_frame=0, device="cud
         query_points: tensor of shape (num_points, 3). The 3rd dimension is the (x, y, t) coordinates. For facial landmarks num_points = 68.
     """
     all_query_points = torch.from_numpy(np.load(query_points_path)).to(device) # N x 2 x 68 where N is the number of frames in the complete data
-    query_frame_index = query_frame * (data_split_stride) - 1
+    query_frame_index = 0 if query_frame == 0 else query_frame * (data_split_stride) - 1
     query_points = all_query_points[query_frame_index].T
     time_column = torch.ones((query_points.size(0), 1), device=device) * query_frame
                                   
