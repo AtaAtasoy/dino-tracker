@@ -60,11 +60,16 @@ def run(args):
     masks_path = Path(config_paths["masks_path"])
     segm_mask_path = sorted(list(Path(masks_path).glob("*.jpg")) + list(Path(masks_path).glob("*.png")))[args.vis_start_frame]
     bg_of_trajectories_path = config_paths["bg_trajectories_file"]
-    trajs_path = os.path.join(config_paths["grid_trajectories_dir"], f"grid_trajectories.npy")
-    occ_path = os.path.join(config_paths["grid_occlusions_dir"], f"grid_occlusions.npy")
     model_vis_dir = config_paths['model_vis_dir']
+    query_points_file_name = args.query_points.split("/")[-1][:-4] if args.query_points else None # Get the name of the .npy file that was used
     
-
+    if args.query_points:
+        trajs_path = os.path.join(config_paths["grid_trajectories_dir"], f"{query_points_file_name}_start_frame_{args.vis_start_frame}_interval_{args.interval}_grid_trajectories.npy")
+        occ_path = os.path.join(config_paths["grid_occlusions_dir"], f"{query_points_file_name}_start_frame_{args.vis_start_frame}_interval_{args.interval}_grid_occlusions.npy")
+    else:
+        trajs_path = os.path.join(config_paths["grid_trajectories_dir"], f"start_frame_{args.vis_start_frame}_interval_{args.interval}_grid_trajectories.npy")
+        occ_path = os.path.join(config_paths["grid_occlusions_dir"], f"start_frame_{args.vis_start_frame}_interval_{args.interval}_grid_occlusions.npy")
+        
     video = load_video(video_folder, num_frames=300) # T x 3 x H x W, torch.float32, [0, 1]
     video = (video.permute(0, 2, 3, 1).cpu().numpy() * 255).astype(np.uint8) # T x H x W x 3, numpy.uint8, [0, 255]
     video_h, video_w = video.shape[1], video.shape[2]
@@ -101,7 +106,12 @@ def run(args):
 
     
     os.makedirs(model_vis_dir, exist_ok=True)
-    dotted_vis_name = f"dotted_tracks_fps_{args.fps}.mp4" if args.erosion_kernel_size is None else f"dotted_tracks_erosion_kernel_{args.erosion_kernel_size}_fps_{args.fps}.mp4"
+    
+    if args.query_points:
+        dotted_vis_name = f"{query_points_file_name}_start_frame_{args.vis_start_frame}_interval_{args.interval}_dotted_tracks_fps_{args.fps}.mp4" if args.erosion_kernel_size is None else f"dotted_tracks_erosion_kernel_{args.erosion_kernel_size}_fps_{args.fps}.mp4"
+    else:
+        dotted_vis_name = f"start_frame_{args.vis_start_frame}_interval_{args.interval}_dotted_tracks_fps_{args.fps}.mp4" if args.erosion_kernel_size is None else f"dotted_tracks_erosion_kernel_{args.erosion_kernel_size}_fps_{args.fps}.mp4"
+        
     tracks_video_no_trace = viz_utils.plot_tracks_v2(video, tracks[is_fg], occluded[is_fg], rainbow_colors=True, point_size=args.point_size)
     print(tracks_video_no_trace.shape, video.shape, tracks[is_fg].shape, occluded[is_fg].shape)
     save_video(tracks_video_no_trace, os.path.join(model_vis_dir, dotted_vis_name), fps=args.fps)
@@ -156,6 +166,7 @@ if __name__ == "__main__":
     parser.add_argument("--point-size", type=int, default=40)
     parser.add_argument("--linewidth", type=float, default=1.5)
     parser.add_argument("--plot-trails", action="store_true", default=False, help="Plot rainbow trails using homographies.")
+    parser.add_argument("--query-points", type=str, default=None, help="should be same as query_points in inference_grid.py")
     args = parser.parse_args()
     
     run(args)

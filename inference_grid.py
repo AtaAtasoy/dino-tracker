@@ -4,7 +4,7 @@ import torch
 import argparse
 from dino_tracker import DINOTracker
 from models.model_inference import ModelInference
-from data.data_utils import get_grid_query_points
+from data.data_utils import get_grid_query_points, load_pre_computed_query_points
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -14,8 +14,8 @@ def run(args):
     dino_tracker = DINOTracker(args)
     dino_tracker.load_fg_masks()
     model = dino_tracker.get_model()
-    # interval = args.interval
-    # start_frame = args.start_frame
+    interval = args.interval
+    start_frame = args.start_frame
     if args.iter is not None:
         model.load_weights(args.iter)
 
@@ -33,17 +33,25 @@ def run(args):
 
     orig_video_h, orig_video_w = dino_tracker.orig_video_res_h, dino_tracker.orig_video_res_w
     model_video_h, model_video_w = model.video.shape[-2], model.video.shape[-1]
+    
+    if args.query_points:
+        grid_query_points = load_pre_computed_query_points(args.query_points, args.start_frame)
+    else:
+        segm_mask = dino_tracker.fg_masks[args.start_frame].to(device) if args.use_segm_mask else None # H x W / None
+        grid_query_points = get_grid_query_points((orig_video_h, orig_video_w), segm_mask=segm_mask, device=device, interval=args.interval, query_frame=args.start_frame)
 
-    segm_mask = dino_tracker.fg_masks[args.start_frame].to(device) if args.use_segm_mask else None # H x W / None
-    grid_query_points = get_grid_query_points((orig_video_h, orig_video_w), segm_mask=segm_mask, device=device, interval=args.interval, query_frame=args.start_frame)
     grid_query_points = grid_query_points * torch.tensor([model_video_w / orig_video_w, model_video_h / orig_video_h, 1.0]).to(device) # resizes query points to model resolution
-
+   
     grid_trajectories, grid_occlusions = model_inference.infer(grid_query_points, batch_size=args.batch_size)
-    np.save(os.path.join(grid_trajectories_dir, "grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
-    np.save(os.path.join(grid_occlusions_dir, "grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
-
-    # np.save(os.path.join(grid_trajectories_dir, f"start_frame_{start_frame}_interval_{interval}_grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
-    # np.save(os.path.join(grid_occlusions_dir, f"start_frame_{start_frame}_interval_{interval}_grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
+    
+    if args.query_points:
+        query_points_file_name = args.query_points.split("/")[-1][:-4] # Get the name of the .npy file that was used
+        np.save(os.path.join(grid_trajectories_dir, f"{query_points_file_name}_start_frame_{start_frame}_interval_{interval}_grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
+        np.save(os.path.join(grid_occlusions_dir, f"{query_points_file_name}_start_frame_{start_frame}_interval_{interval}_grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
+    else:
+        np.save(os.path.join(grid_trajectories_dir, f"start_frame_{start_frame}_interval_{interval}_grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
+        np.save(os.path.join(grid_occlusions_dir, f"start_frame_{start_frame}_interval_{interval}_grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -54,5 +62,6 @@ if __name__ == "__main__":
     parser.add_argument("--interval", type=int, default=10)
     parser.add_argument("--use-segm-mask", action="store_true", default=False)
     parser.add_argument("--batch-size", type=int, default=None)
+    parser.add_argument("--query-points", type=str, default=None)
     args = parser.parse_args()
     run(args)
