@@ -3,14 +3,14 @@ checkpoint_interval: 2500
 
 
 ########################## data loader ##########################
-video_resw: 266
-video_resh: 392
+video_resw: 854
+video_resh: 476
 
 fg_traj_ratio: 0.5
-keep_traj_in_cpu: true # set to true for long videos (> 150 frames)
+keep_traj_in_cpu: false # set to true for long videos (> 150 frames)
 train_batch_size: 512
 batch_n_frames: 4
-sampler_batch_iterations: 1000 # uncomment for large videos
+# sampler_batch_iterations: 1000 # uncomment for large videos
 
 
 ########################## optimization ##########################

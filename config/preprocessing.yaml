@@ -1,21 +1,21 @@
 # --- OF trajectories config ---
-video_resh: 392
-video_resw: 266
+video_resh: 476
+video_resw: 854
 min_trajectory_length: 2
 threshold: 1.5
 filter_using_direct_flow: true
 direct_flow_threshold: 2.5
 
 # --- DINO embeddings for training & dino-bb ---
-dino_model_name: dinov2_vitb14
+dino_model_name: dinov2_vitl14
 dino_facet: tokens
-dino_layer: 11
+dino_layer: 15 
 dino_stride: 7
 
 # --- DINO embeddings for FG mask ---
-mask_dino_model_name: dinov2_vitb14
+mask_dino_model_name: dinov2_vitl14
 mask_dino_facet: tokens
-mask_dino_layer: 11
+mask_dino_layer: 23
 mask_dino_stride: 7
 
 # --- FG mask ---
