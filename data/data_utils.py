@@ -196,7 +196,7 @@ def get_grid_query_points(res_h_w, segm_mask=None, device="cuda", interval=None,
 
     return query_points
 
-def load_pre_computed_query_points(query_points_path, query_frame=0, device="cuda", data_split_stride=4):
+def load_pre_computed_query_points(dataset_path, query_frame=0, device="cuda", data_split_stride=4):
     """
     Loads the pre_computed query points from a .npy file.
     
@@ -209,7 +209,8 @@ def load_pre_computed_query_points(query_points_path, query_frame=0, device="cud
     Returns:
         query_points: tensor of shape (num_points, 3). The 3rd dimension is the (x, y, t) coordinates. For facial landmarks num_points = 68.
     """
-    all_query_points = torch.from_numpy(np.load(query_points_path)).to(device) # N x 2 x 68 where N is the number of frames in the complete data
+    all_query_points_path = os.path.join(dataset_path, "face_landmarks.npy")
+    all_query_points = torch.from_numpy(np.load(all_query_points_path)).to(device) # N x 2 x 68 where N is the number of frames in the complete data
     query_frame_index = 0 if query_frame == 0 else query_frame * (data_split_stride) - 1
     query_points = all_query_points[query_frame_index].T
     time_column = torch.ones((query_points.size(0), 1), device=device) * query_frame
@@ -217,3 +218,32 @@ def load_pre_computed_query_points(query_points_path, query_frame=0, device="cud
     query_points = torch.hstack((query_points, time_column))
     
     return query_points
+
+def generate_benchmark_data(dataset_path: str, experiment_name: str, data_split_stride=4, inference_resolution=(266, 392) , video_resolution=(550, 802)):
+    """
+    Generates benchmark data dictionary for face dataset to compute tapvid metrics.
+    
+    Args:
+        gt_points_path: path to the ground truth points.
+        gt_occluded_path: path to the ground truth occlusions.
+        
+    Returns:
+        benchmark_data: dictionary containing the ground truth points and occlusions.
+    """
+    gt_points = torch.tensor(np.load(os.path.join(dataset_path, "face_landmarks.npy"))[::data_split_stride])
+    gt_visible = torch.tensor(np.load(os.path.join(dataset_path, "visibility.npy"))[::data_split_stride])
+    
+    predicted_points = torch.tensor(np.load(os.path.join(dataset_path, "grid_trajectories", f"{experiment_name}_grid_trajectories.npy")))
+    predicted_occluded = torch.tensor(np.load(os.path.join(dataset_path, "grid_occlusions", f"{experiment_name}_grid_occlusions.npy")))
+                            
+    benchmark_data = {
+        "gt_points": gt_points,
+        "gt_visible": gt_visible,
+        "predicted_points": predicted_points,
+        "predicted_visible": torch.logical_not(predicted_occluded),
+        "video_resolution": video_resolution,
+        "inference_resolution": inference_resolution
+    }
+        
+    
+    return benchmark_data

@@ -34,8 +34,8 @@ def run(args):
     orig_video_h, orig_video_w = dino_tracker.orig_video_res_h, dino_tracker.orig_video_res_w
     model_video_h, model_video_w = model.video.shape[-2], model.video.shape[-1]
     
-    if args.query_points:
-        grid_query_points = load_pre_computed_query_points(args.query_points, args.start_frame)
+    if args.use_precomputed_points:
+        grid_query_points = load_pre_computed_query_points(args.data_path, args.start_frame)
     else:
         segm_mask = dino_tracker.fg_masks[args.start_frame].to(device) if args.use_segm_mask else None # H x W / None
         grid_query_points = get_grid_query_points((orig_video_h, orig_video_w), segm_mask=segm_mask, device=device, interval=args.interval, query_frame=args.start_frame)
@@ -44,10 +44,9 @@ def run(args):
    
     grid_trajectories, grid_occlusions = model_inference.infer(grid_query_points, batch_size=args.batch_size)
     
-    if args.query_points:
-        query_points_file_name = args.query_points.split("/")[-1][:-4] # Get the name of the .npy file that was used
-        np.save(os.path.join(grid_trajectories_dir, f"{query_points_file_name}_start_frame_{start_frame}_interval_{interval}_grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
-        np.save(os.path.join(grid_occlusions_dir, f"{query_points_file_name}_start_frame_{start_frame}_interval_{interval}_grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
+    if args.use_precomputed_points:
+        np.save(os.path.join(grid_trajectories_dir, f"landmarks_start_frame_{start_frame}_interval_{interval}_grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
+        np.save(os.path.join(grid_occlusions_dir, f"landmarks_start_frame_{start_frame}_interval_{interval}_grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
     else:
         np.save(os.path.join(grid_trajectories_dir, f"start_frame_{start_frame}_interval_{interval}_grid_trajectories.npy"), grid_trajectories[..., :2].cpu().detach().numpy())
         np.save(os.path.join(grid_occlusions_dir, f"start_frame_{start_frame}_interval_{interval}_grid_occlusions.npy"), grid_occlusions.cpu().detach().numpy())
@@ -62,6 +61,6 @@ if __name__ == "__main__":
     parser.add_argument("--interval", type=int, default=10)
     parser.add_argument("--use-segm-mask", action="store_true", default=False)
     parser.add_argument("--batch-size", type=int, default=None)
-    parser.add_argument("--query-points", type=str, default=None)
+    parser.add_argument("--use-precomputed-points", action="store_true", default=False)
     args = parser.parse_args()
     run(args)
