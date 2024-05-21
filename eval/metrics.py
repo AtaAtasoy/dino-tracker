@@ -2,6 +2,7 @@ import os
 import numpy as np
 from typing import Mapping
 from data.tapvid import get_video_config_by_video_id
+import torch
 
 
 def compute_tapvid_metrics(
@@ -285,3 +286,28 @@ def compute_badja_metrics_for_video(
     res_seg = np.mean(np.stack(accs_seg)) * 100.0
     res_3px = np.mean(np.stack(accs_3px)) * 100.0
     return {'acc_seg' : res_seg, 'acc_3px' : res_3px}
+  
+def compute_metrics_for_custom_dataset(benchmark_data: dict):
+  gt_points = benchmark_data["gt_points"].permute(0, 2, 1)
+  gt_visible = benchmark_data["gt_visible"]
+  predicted_points = benchmark_data["predicted_points"].permute(1, 0, 2)
+  predicted_visible = benchmark_data["predicted_visible"].T
+  video_resolution_w, video_resolution_h = benchmark_data["video_resolution"]
+  inference_resolution_w, inference_resolution_h = benchmark_data["inference_resolution"]
+  
+  # Check shapes
+  assert gt_points.shape == predicted_points.shape, "Ground truth and predicted points should have the same shape."
+  assert gt_visible.shape == predicted_visible.shape, "Ground truth and predicted occluded should have the same shape."
+  
+  # Rescale points to video resolution
+  predicted_points = predicted_points * np.array([video_resolution_w / inference_resolution_w, video_resolution_h / inference_resolution_h], dtype=np.float32)
+
+  # Occlusion accuracy is how often the predicted occlusion equals the ground truth.
+  occ_acc = torch.sum(predicted_visible == gt_visible) / torch.sum(gt_visible)
+  
+  # Compute metrics
+  print(f"Occlusion accuracy: {occ_acc}")
+  
+  print(f"gt_points: {gt_points.shape}, gt_occluded: {gt_visible.shape}, predicted_points: {predicted_points.shape}, predicted_occluded: {predicted_visible.shape}")
+  
+  raise NotImplementedError("Custom dataset metrics computation is not implemented yet.")
