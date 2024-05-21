@@ -1,5 +1,11 @@
 # DINO-Tracker: Taming DINO for Self-Supervised Point Tracking in a Single Video
 
+## Fork Contributions
+Currently changes are on the **mini-dino-tracker** branch.
+- Using Dino-v2b and Raft_Small.
+- Ability to operate on pre-defined query points.
+- Naming updates for inference and visualization outputs.
+
 ## [<a href="https://dino-tracker.github.io/" target="_blank">Project Page</a>] [<a href="https://arxiv.org/abs/2403.14548" target="_blank">arXiv</a>]
 
 
