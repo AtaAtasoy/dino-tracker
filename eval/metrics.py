@@ -338,4 +338,11 @@ def compute_metrics_for_custom_dataset(benchmark_data: dict, device="cuda"):
   metrics["video_average_jaccard"] = torch.mean(metrics["average_jaccard"]) # Mean Jaccard metric across all thresholds for all frames [1]
   metrics["video_average_pts_within_thresh"] = torch.mean(metrics["average_pts_within_thresh"]) # Mean fraction of points within the threshold among points that are visible in the ground truth for all frames [1]
   
+  criterion_1 = torch.nn.L1Loss()
+  l1_loss = criterion_1(predicted_points, gt_points)
+  
+  criterion_2 = torch.nn.MSELoss()
+  l2_loss = criterion_2(predicted_points, gt_points)
+  
   print(f"Occlusion accuracy: {metrics['occlusion_accuracy']}, Average Jaccard: {metrics['video_average_jaccard']}, Average points within threshold: {metrics['video_average_pts_within_thresh']}")
+  print(f"L1 loss: {l1_loss}, L2 loss: {l2_loss}")
