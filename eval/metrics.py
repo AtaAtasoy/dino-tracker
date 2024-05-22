@@ -287,13 +287,15 @@ def compute_badja_metrics_for_video(
     res_3px = np.mean(np.stack(accs_3px)) * 100.0
     return {'acc_seg' : res_seg, 'acc_3px' : res_3px}
   
-def compute_metrics_for_custom_dataset(benchmark_data: dict):
-  gt_points = benchmark_data["gt_points"].permute(0, 2, 1)
-  gt_visible = benchmark_data["gt_visible"]
-  predicted_points = benchmark_data["predicted_points"].permute(1, 0, 2)
-  predicted_visible = benchmark_data["predicted_visible"].T
+def compute_metrics_for_custom_dataset(benchmark_data: dict, device="cuda"):
+  gt_points = benchmark_data["gt_points"].permute(0, 2, 1).to(device) # [batch, num_points, 2]
+  gt_visible = benchmark_data["gt_visible"].to(device)
+  predicted_points = benchmark_data["predicted_points"].permute(1, 0, 2) # [batch, num_points, 2]
+  predicted_visible = benchmark_data["predicted_visible"].T.to(device) # [batch, num_points]
   video_resolution_w, video_resolution_h = benchmark_data["video_resolution"]
   inference_resolution_w, inference_resolution_h = benchmark_data["inference_resolution"]
+  
+  metrics = {}
   
   # Check shapes
   assert gt_points.shape == predicted_points.shape, "Ground truth and predicted points should have the same shape."
@@ -301,13 +303,39 @@ def compute_metrics_for_custom_dataset(benchmark_data: dict):
   
   # Rescale points to video resolution
   predicted_points = predicted_points * np.array([video_resolution_w / inference_resolution_w, video_resolution_h / inference_resolution_h], dtype=np.float32)
+  predicted_points = predicted_points.to(device)
 
   # Occlusion accuracy is how often the predicted occlusion equals the ground truth.
   occ_acc = torch.sum(predicted_visible == gt_visible) / torch.sum(gt_visible)
+  metrics["occlusion_accuracy"] = occ_acc
   
-  # Compute metrics
-  print(f"Occlusion accuracy: {occ_acc}")
+  all_frac_within = []
+  all_jaccard = []
+  for threshold in [1, 2, 4, 8, 16]:
+    within_distance = torch.square(predicted_points - gt_points).sum(axis=-1) < threshold ** 2
+    is_correct = torch.logical_and(within_distance, gt_visible) # is_correct is a boolean tensor of shape [batch, num_points]
+    
+    # frac_within_threshild is the fraction of points within the threshold among points that are visible in the ground truth, ignoring whether they're predicted to be visible.   
+    gt_visible_points = gt_visible.sum(axis=1) # number of visible points in the ground truth for each frame
+    frac_correct = torch.sum(is_correct, axis=1) / gt_visible_points # fraction of points within the threshold among points that are visible in the ground truth for each frame
+    metrics[f"pts_within_{threshold}"] = frac_correct
+    all_frac_within.append(frac_correct)
+    
+    true_positives = torch.sum(is_correct & predicted_visible, axis=1) # True positives are points that are within the threshold and where both the prediction and the ground truth are listed as visible.
+    
+    # False positives are points that are predicted to be visible but GT is not visible or too far from the prediction.
+    false_positives = (~gt_visible) & predicted_visible
+    false_positives = false_positives | ((~within_distance) & predicted_visible)
+    false_positives = torch.sum(false_positives, axis=1)
+    
+    # jaccard metric calculates 
+    jaccard = true_positives / (gt_visible_points + false_positives) # Jaccard metric for the given threshold for each frame
+    metrics[f"jaccard_{threshold}"] = jaccard
+    all_jaccard.append(jaccard)  
   
-  print(f"gt_points: {gt_points.shape}, gt_occluded: {gt_visible.shape}, predicted_points: {predicted_points.shape}, predicted_occluded: {predicted_visible.shape}")
+  metrics["average_jaccard"] = torch.mean(torch.stack(all_jaccard), axis=0) # Mean Jaccard metric across all thresholds for each frame: [batch size]
+  metrics["average_pts_within_thresh"] = torch.mean(torch.stack(all_frac_within), axis=0) # Mean fraction of points within the threshold among points that are visible in the ground truth for each frame [batch size]
+  metrics["video_average_jaccard"] = torch.mean(metrics["average_jaccard"]) # Mean Jaccard metric across all thresholds for all frames [1]
+  metrics["video_average_pts_within_thresh"] = torch.mean(metrics["average_pts_within_thresh"]) # Mean fraction of points within the threshold among points that are visible in the ground truth for all frames [1]
   
-  raise NotImplementedError("Custom dataset metrics computation is not implemented yet.")
+  print(f"Occlusion accuracy: {metrics['occlusion_accuracy']}, Average Jaccard: {metrics['video_average_jaccard']}, Average points within threshold: {metrics['video_average_pts_within_thresh']}")
