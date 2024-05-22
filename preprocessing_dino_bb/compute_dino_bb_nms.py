@@ -81,7 +81,7 @@ def compute_max_r(bb, bb_rev):
 def run(args):
     dino_bb = torch.load(args.dino_bb_path) # { 'i_j': { source_coords: [N x 2] } }
     dino_emb = torch.load(args.dino_emb_path) # t x c x h x w
-    coords = create_meshgrid(h=476, w=854, step=args.stride) # N x 2
+    coords = create_meshgrid(h=args.h, w=args.w, step=args.stride) # N x 2
 
     for key in tqdm(dino_bb.keys()):
         # no dino-bbs for this frame pair
@@ -118,5 +118,7 @@ if __name__ == "__main__":
     parser.add_argument("--stride", type=int, default=7)
     parser.add_argument("--box-size", type=int, default=50)
     parser.add_argument("--iou-thresh", type=float, default=0.2)
+    parser.add_argument("--h", type=int, default=392)
+    parser.add_argument("--w", type=int, default=266)
     args = parser.parse_args()
     run(args)

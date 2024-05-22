@@ -48,6 +48,6 @@ if __name__ == "__main__":
     # 4. extract_bb_nms.py
     args_list = ['python', 'preprocessing_dino_bb/compute_dino_bb_nms.py', 
                  '--dino-bb-path', dino_bb_filtered_path, '--dino-emb-path', dino_emb_path, '--out-path', dino_bb_filtered_path,
-                 '--stride', str(dino_bb_stride), '--box-size', str(box_size), '--iou-thresh', str(iou_thresh)]
+                 '--stride', str(dino_bb_stride), '--box-size', str(box_size), '--iou-thresh', str(iou_thresh), '--h', str(h), '--w', str(w)]
     print(f"----- Running {' '.join(args_list)}", flush=True)
     subprocess.run(args_list)

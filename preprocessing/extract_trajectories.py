@@ -3,8 +3,8 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch.nn import functional as F
-# from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
-from torchvision.models.optical_flow import Raft_Small_Weights, raft_small
+from torchvision.models.optical_flow import Raft_Large_Weights, raft_large
+# from torchvision.models.optical_flow import Raft_Small_Weights, raft_small
 from einops import rearrange, repeat
 from tqdm import tqdm
 from tqdm.contrib import tzip
@@ -131,7 +131,7 @@ def compute_direct_flows_for_start_frame(
     dst_frames_batch = raft_video[1:] # (t-1) x 3 x h x w
     forward_flows = []
     backward_flows = []
-    max_batch_size = 16
+    max_batch_size = 32
     for i in range(0, src_frame_batch.shape[0], max_batch_size):
         end = min(i + max_batch_size, src_frame_batch.shape[0])
         forward_flows.append(model(src_frame_batch[i:end], dst_frames_batch[i:end], num_flow_updates=24)[-1])
@@ -180,10 +180,10 @@ def save_trajectories(args):
     h, w = load_image(images[0], device).shape[2:4] if infer_res_size is None else infer_res_size
     t = len(images)
 
-    # model = raft_large(weights=Raft_Large_Weights.DEFAULT, progress=False).to(device).eval()
-    # transforms = Raft_Large_Weights.DEFAULT.transforms()
-    model = raft_small(weights=Raft_Small_Weights.DEFAULT, progress=False).to(device).eval()
-    transforms = Raft_Small_Weights.DEFAULT.transforms()
+    model = raft_large(weights=Raft_Large_Weights.DEFAULT, progress=False).to(device).eval()
+    transforms = Raft_Large_Weights.DEFAULT.transforms()
+    # model = raft_small(weights=Raft_Small_Weights.DEFAULT, progress=False).to(device).eval()
+    # transforms = Raft_Small_Weights.DEFAULT.transforms()
 
     masks, flows = get_flows_with_masks(
         model,
